@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import matplotlib.pyplot as plt
-import xgboost as xgb
+import plotly.graph_objects as go
 from datetime import datetime
 import os
 
@@ -40,7 +39,6 @@ total_yield = df["Revenue"].sum() if not df.empty else 1_000_000
 st.header("1. Live Map of Solar Plants in Oman")
 
 map_df = df.dropna(subset=["Plant name"]).copy()
-
 locations = pd.DataFrame({
     "Plant": map_df["Plant name"].head(10),
     "Lat": [23.58 + i * 0.01 for i in range(len(map_df.head(10)))],
@@ -54,7 +52,6 @@ fig_map = px.scatter_mapbox(
     color="Gain_kWh", color_continuous_scale="greens",
     zoom=8, mapbox_style="open-street-map"
 )
-
 fig_map.update_layout(mapbox_center={"lat": 23.58, "lon": 58.40})
 st.plotly_chart(fig_map, use_container_width=True)
 
@@ -67,7 +64,6 @@ col3.metric("CO₂ Reduction (kg)", "19,316", "+25%")
 
 # ==================== 3. Top 5 Plants ====================
 st.header("3. Top 5 Plants with Highest Gains")
-
 if "Plant name" in df.columns:
     top5 = df.sort_values("Revenue", ascending=False).head(5)
     if not top5.empty:
@@ -87,25 +83,42 @@ investment = st.slider("Investment Amount (OMR)", 1000, 100000, 5000)
 roi = investment * 2.85
 st.metric("Expected ROI", f"{roi:,.0f} OMR", "+285%")
 
-# ==================== 6. Predictive Yield 2030 ====================
-st.header("6. XGBoost Predictive Yield Until 2030")
+# ==================== 6. Before vs After PredAIoT ====================
+st.header("6. Yield Before vs After PredAIoT")
+years_actual = list(range(2015, 2026))
+yield_actual = df["Revenue"].fillna(0).tolist()
+yield_predaiot = [y * 1.25 for y in yield_actual]  # Simulated 25% increase after PredAIoT
 
-years = list(range(2026, 2031))
-yield_pred = [total_yield * (1 + i * 0.05) for i in range(5)]
+fig_compare = go.Figure()
+fig_compare.add_trace(go.Bar(x=years_actual, y=yield_actual, name="Before PredAIoT"))
+fig_compare.add_trace(go.Bar(x=years_actual, y=yield_predaiot, name="After PredAIoT"))
 
-fig_pred = px.line(
-    x=years, y=yield_pred, markers=True,
-    title="Forecasted Annual Yield (kWh)"
+fig_compare.update_layout(
+    title="Annual Yield Before vs After PredAIoT",
+    xaxis_title="Year",
+    yaxis_title="Yield (OMR / kWh)",
+    barmode="group"
 )
-fig_pred.update_layout(xaxis_title="Year", yaxis_title="Forecasted Yield (kWh)")
-st.plotly_chart(fig_pred)
+st.plotly_chart(fig_compare, use_container_width=True)
 
-# ==================== 7. System Status ====================
-st.header("7. EDE v2.0 System Status")
+# ==================== 7. Predictive Yield 5 Years ====================
+st.header("7. Predicted Benefits for Next 5 Years")
+years_future = list(range(2026, 2031))
+yield_future = [total_yield * (1 + i * 0.05) for i in range(5)]  # +5% per year
+
+fig_future = px.line(
+    x=years_future, y=yield_future, markers=True,
+    title="Forecasted Annual Yield (kWh) 2026-2030"
+)
+fig_future.update_layout(xaxis_title="Year", yaxis_title="Forecasted Yield (kWh)")
+st.plotly_chart(fig_future, use_container_width=True)
+
+# ==================== 8. System Status ====================
+st.header("8. EDE v2.0 System Status")
 st.success("Running – Optimizing Maintenance for 7 Plants")
 
-# ==================== 8. Download Report ====================
-st.header("8. Download Latest Report")
+# ==================== 9. Download Report ====================
+st.header("9. Download Latest Report")
 st.download_button("Download PDF Report", "report.pdf")
 
 st.caption("Powered by PredAIoT – Muscat, Oman – November 18, 2025")
