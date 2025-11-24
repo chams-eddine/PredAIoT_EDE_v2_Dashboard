@@ -3,4 +3,5 @@ pandas
 plotly
 matplotlib
 xgboost
-openpyxl 
+openpyxl
+numpy
